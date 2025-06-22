@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pro Car Racing Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+            text-align: center;
+        }
+        #gameArea {
+            width: 400px;
+            height: 600px;
+            margin: auto;
+            border: 2px solid white;
+            position: relative;
+            overflow: hidden;
+            background-image: url('https://i.ibb.co/WcNtnNs/road-background.jpg');
+            background-repeat: repeat-y;
+            background-size: cover;
+            animation: roadMove 2s linear infinite;
+        }
+        @keyframes roadMove {
+            0% { background-position-y: 0; }
+            100% { background-position-y: 600px; }
+        }
+        .car {
+            width: 50px;
+            height: 100px;
+            position: absolute;
+            bottom: 10px;
+            left: 175px;
+        }
+        .enemy {
+            width: 50px;
+            height: 100px;
+            position: absolute;
+        }
+        #score, #highScore {
+            color: white;
+            font-size: 20px;
+            margin-top: 10px;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 600px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            display: none;
+        }
+        .btn {
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 10px;
+            background-color: #00ff99;
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+<h1 style="color:white;">🚗 Pro Car Racing Game 🚗</h1>
+<div id="score">Score: 0</div>
+<div id="highScore">High Score: 0</div>
+
+<div id="gameArea" ontouchstart="startDrag(event)" ontouchmove="dragCar(event)">
+    <img src="https://i.ibb.co/FxzLDR1/player-car.png" class="car" id="playerCar">
+    <div id="gameOverScreen">
+        <div>Game Over!</div>
+        <button class="btn" onclick="startGame()">Restart</button>
+    </div>
+</div>
+
+<button class="btn" onclick="startGame()">Start Game</button>
+
+<audio id="bgMusic" loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="crashSound">
+    <source src="https://www.soundjay.com/button/sounds/button-16.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    const gameArea = document.getElementById('gameArea');
+    const playerCar = document.getElementById('playerCar');
+    const scoreBoard = document.getElementById('score');
+    const highScoreBoard = document.getElementById('highScore');
+    const bgMusic = document.getElementById('bgMusic');
+    const crashSound = document.getElementById('crashSound');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+
+    let playerX = 175;
+    let enemies = [];
+    let gameSpeed = 4;
+    let gameInterval;
+    let score = 0;
+    let highScore = localStorage.getItem('highScore') || 0;
+    highScoreBoard.innerText = 'High Score: ' + highScore;
+
+    function moveCar(x) {
+        playerX = Math.min(Math.max(x - 25, 0), 350);
+        playerCar.style.left = playerX + 'px';
+    }
+
+    function startDrag(e) {
+        moveCar(e.touches[0].clientX - gameArea.getBoundingClientRect().left);
+    }
+
+    function dragCar(e) {
+        e.preventDefault();
+        moveCar(e.touches[0].clientX - gameArea.getBoundingClientRect().left);
+    }
+
+    function startGame() {
+        resetGame();
+        bgMusic.play();
+        gameInterval = setInterval(() => {
+            spawnEnemy();
+            moveEnemies();
+            score++;
+            scoreBoard.innerText = 'Score: ' + score;
+
+            if (score % 100 === 0) {
+                gameSpeed += 1;
+            }
+        }, 50);
+    }
+
+    function spawnEnemy() {
+        if (Math.random() < 0.02) {
+            let enemy = document.createElement('img');
+            enemy.classList.add('enemy');
+            enemy.src = 'https://i.ibb.co/9tq9C2Y/enemy-car.png';
+            enemy.style.top = '0px';
+            enemy.style.left = (Math.floor(Math.random() * 8) * 50) + 'px';
+            gameArea.appendChild(enemy);
+            enemies.push(enemy);
+        }
+    }
+
+    function moveEnemies() {
+        enemies.forEach((enemy, index) => {
+            let top = parseInt(enemy.style.top.replace('px', ''));
+            enemy.style.top = (top + gameSpeed) + 'px';
+
+            if (top + 100 >= 500 && Math.abs(parseInt(enemy.style.left) - playerX) < 50) {
+                gameOver();
+            }
+
+            if (top > 600) {
+                gameArea.removeChild(enemy);
+                enemies.splice(index, 1);
+            }
+        });
+    }
+
+    function gameOver() {
+        clearInterval(gameInterval);
+        bgMusic.pause();
+        crashSound.play();
+        gameOverScreen.style.display = 'flex';
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('highScore', highScore);
+            highScoreBoard.innerText = 'High Score: ' + highScore;
+        }
+    }
+
+    function resetGame() {
+        enemies.forEach(enemy => gameArea.removeChild(enemy));
+        enemies = [];
+        playerX = 175;
+        playerCar.style.left = playerX + 'px';
+        score = 0;
+        gameSpeed = 4;
+        scoreBoard.innerText = 'Score: 0';
+        gameOverScreen.style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
